@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG vs CAG — Live Comparison Tool</title>
+<meta name="description" content="Compare Retrieval Augmented Generation and Cache Augmented Generation side by side. Upload your own data, ask questions, see which architecture wins.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0d14;
+  --surface: #13161f;
+  --surfaceAlt: #1a1e2b;
+  --border: #252a3a;
+  --text: #e8e9ed;
+  --textMuted: #7a7f94;
+  --accent: #00d4aa;
+  --accentDim: rgba(0,212,170,0.10);
+  --accentBorder: rgba(0,212,170,0.22);
+  --red: #ff6b6b;
+  --redDim: rgba(255,107,107,0.10);
+  --redBorder: rgba(255,107,107,0.22);
+  --blue: #5b9cf6;
+  --blueDim: rgba(91,156,246,0.10);
+  --blueBorder: rgba(91,156,246,0.22);
+  --yellow: #f5c542;
+  --yellowDim: rgba(245,197,66,0.10);
+  --mono: 'JetBrains Mono', monospace;
+  --body: 'Manrope', sans-serif;
+  --display: 'Syne', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+::selection { background: var(--accentDim); color: var(--accent); }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+/* Header */
+.header {
+  border-bottom: 1px solid var(--border);
+  padding: 20px 0;
+  position: sticky;
+  top: 0;
+  background: rgba(11,13,20,0.92);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+.header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.logo .vs {
+  color: var(--textMuted);
+  font-weight: 400;
+  font-size: 14px;
+  margin: 0 10px;
+}
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.githubLink {
+  font-size: 13px;
+  color: var(--textMuted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.githubLink:hover { color: var(--text); text-decoration: none; }
+
+/* Hero */
+.hero {
+  padding: 60px 0 40px;
+  text-align: left;
+}
+.hero h2 {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+.hero p {
+  color: var(--textMuted);
+  font-size: 16px;
+  max-width: 600px;
+  line-height: 1.7;
+}
+
+/* Cards / Sections */
+.section { margin-bottom: 32px; }
+.sectionTitle {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--textMuted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+/* Form elements */
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.hint {
+  font-size: 12px;
+  color: var(--textMuted);
+  margin-bottom: 10px;
+}
+
+input[type="password"],
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--surfaceAlt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--body);
+  transition: border-color 0.2s;
+}
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+textarea {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--display);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.btnPrimary {
+  background: var(--accent);
+  color: var(--bg);
+}
+.btnPrimary:hover { filter: brightness(1.1); }
+.btnPrimary:disabled {
+  background: var(--surfaceAlt);
+  color: var(--textMuted);
+  cursor: default;
+}
+.btnSecondary {
+  background: var(--surfaceAlt);
+  color: var(--textMuted);
+  border: 1px solid var(--border);
+}
+.btnSecondary:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Metric cards */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.metricCard {
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.metricLabel {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.metricValue {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 800;
+}
+.metricUnit {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Answer cards */
+.answerCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.answerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.answerTitle {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+}
+.answerTag {
+  font-size: 11px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.answerSubtitle {
+  font-size: 12px;
+  color: var(--textMuted);
+  margin-bottom: 14px;
+}
+.answerText {
+  font-size: 13.5px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+/* Comparison grid */
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Detailed metrics table */
+.metricsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 16px;
+}
+.metricsTable th {
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: var(--textMuted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+}
+.metricsTable td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.metricsTable tr:last-child td { border-bottom: none; }
+
+/* History table */
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.historyTable th {
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 600;
+  color: var(--textMuted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.historyTable td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.historyTable tr:last-child td { border-bottom: none; }
+
+/* Progress */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.progressBox {
+  text-align: center;
+  padding: 60px 0;
+}
+.progressText {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+.progressStep {
+  color: var(--textMuted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Breakdown bar */
+.breakdownBar {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: var(--accentDim);
+  border: 1px solid var(--accentBorder);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+/* Quality score */
+.qualityDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 4px;
+  border: 1px solid var(--border);
+}
+.tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--textMuted);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--body);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab.active {
+  background: var(--surfaceAlt);
+  color: var(--text);
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 48px 0 32px;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .metricsGrid { grid-template-columns: 1fr; }
+  .comparisonGrid { grid-template-columns: 1fr; }
+  .hero h2 { font-size: 26px; }
+}
+
+/* Animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fadeUp { animation: fadeUp 0.4s ease both; }
+
+/* Hide sections */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="container">
+    <div class="logo">
+      <span style="color:var(--accent)">RAG</span>
+      <span class="vs">vs</span>
+      <span style="color:var(--blue)">CAG</span>
+    </div>
+    <div class="headerRight">
+      <a href="https://github.com/anubhavsinghmaar/rag-vs-cag" target="_blank" class="githubLink">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <button class="btnSecondary" onclick="resetAll()" style="padding:8px 16px;width:auto;font-size:12px">Start Over</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- HERO -->
+  <div class="hero" id="heroSection">
+    <h2>Same model. Same data.<br>Different architecture.</h2>
+    <p>Upload your knowledge, ask questions, and watch RAG and CAG compete in real time. Every metric tracked. No data leaves your browser.</p>
+  </div>
+
+  <!-- SETUP SECTION -->
+  <div id="setupSection" class="section fadeUp">
+    <div class="card" style="margin-bottom:20px">
+      <label>Gemini API Key</label>
+      <p class="hint">Free from <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>. Stored only in your browser's memory.</p>
+      <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <label style="margin-bottom:0">Knowledge Base</label>
+        <span id="wordCount" style="font-size:12px;color:var(--textMuted)">0 words</span>
+      </div>
+      <p class="hint">Paste your own text or use the sample (a fictional startup's product doc).</p>
+      <textarea id="knowledgeInput" rows="14"></textarea>
+    </div>
+
+    <button class="btn btnPrimary" id="continueBtn" onclick="goToQuery()" disabled>Continue</button>
+  </div>
+
+  <!-- QUERY SECTION -->
+  <div id="querySection" class="section hidden fadeUp">
+    <div class="card" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <span style="font-size:13px;color:var(--textMuted)">Knowledge loaded</span>
+        <p style="font-size:15px;font-weight:600;margin-top:2px" id="loadedInfo"></p>
+      </div>
+      <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="showSetup()">Edit</span>
+    </div>
+
+    <div class="card">
+      <label>Ask a question about your document</label>
+      <textarea id="questionInput" rows="3" placeholder="e.g. What is the pricing for NovaMind Assist?"></textarea>
+      <div style="margin-top:16px">
+        <button class="btn btnPrimary" id="runBtn" onclick="runComparison()" disabled>Run Comparison</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS SECTION -->
+  <div id="resultsSection" class="section hidden fadeUp">
+
+    <!-- Progress -->
+    <div id="progressBox" class="progressBox hidden">
+      <div class="spinner"></div>
+      <p class="progressText" id="progressText">Starting...</p>
+      <p class="progressStep" id="progressStep"></p>
+    </div>
+
+    <!-- Error -->
+    <div id="errorBox" class="hidden" style="background:var(--redDim);border:1px solid var(--red);border-radius:10px;padding:16px;margin-bottom:20px">
+      <p style="color:var(--red);font-size:14px" id="errorText"></p>
+    </div>
+
+    <!-- Results content -->
+    <div id="resultsContent" class="hidden">
+
+      <!-- Question display -->
+      <div style="margin-bottom:24px">
+        <span style="font-size:12px;color:var(--textMuted)">QUESTION</span>
+        <p style="font-size:17px;font-weight:600;font-family:var(--display);margin-top:4px" id="questionDisplay"></p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')" id="tabOverview">Overview</button>
+        <button class="tab" onclick="switchTab('answers')" id="tabAnswers">Answers</button>
+        <button class="tab" onclick="switchTab('metrics')" id="tabMetrics">Detailed Metrics</button>
+        <button class="tab" onclick="switchTab('history')" id="tabHistory">History (<span id="historyCount">0</span>)</button>
+      </div>
+
+      <!-- TAB: Overview -->
+      <div id="panelOverview">
+        <!-- Latency cards -->
+        <div class="metricsGrid" id="latencyCards"></div>
+
+        <!-- RAG breakdown -->
+        <div class="breakdownBar" id="ragBreakdown"></div>
+
+        <!-- Quick answers -->
+        <div id="overviewAnswers"></div>
+      </div>
+
+      <!-- TAB: Answers -->
+      <div id="panelAnswers" class="hidden"></div>
+
+      <!-- TAB: Metrics -->
+      <div id="panelMetrics" class="hidden">
+        <div class="card">
+          <table class="metricsTable" id="detailedTable"></table>
+        </div>
+      </div>
+
+      <!-- TAB: History -->
+      <div id="panelHistory" class="hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-size:13px;color:var(--textMuted)">All comparisons from this session</span>
+          <button class="btnSecondary" onclick="exportHistory()" style="padding:6px 14px;width:auto;font-size:12px">Export JSON</button>
+        </div>
+        <div class="card" style="overflow-x:auto">
+          <table class="historyTable" id="historyTable"></table>
+        </div>
+      </div>
+
+      <!-- Ask another -->
+      <div style="margin-top:28px" id="askAnother">
+        <textarea id="nextQuestionInput" rows="2" placeholder="Ask another question..."></textarea>
+        <div style="margin-top:12px">
+          <button class="btn btnPrimary" id="runAgainBtn" onclick="runAnother()">Run Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    Built by Anubhav Singhmaar · All processing happens in your browser · Powered by Gemini 3 Flash
+  </div>
+</footer>
+
+<script>
+/* ========================================
+   SAMPLE KNOWLEDGE BASE
+   ======================================== */
+const SAMPLE_KNOWLEDGE = `DOCUMENT: Product Specification — NovaMind AI Assistant Platform (Internal)
+===========================================================================
+
+COMPANY OVERVIEW:
+NovaMind Technologies is a Series B startup founded in 2024, headquartered in
+Bangalore, India. The company builds enterprise AI assistants for the healthcare
+and pharmaceutical industry. CEO: Priya Venkatesh. CTO: Arjun Malhotra.
+Total funding: $42M across Seed, Series A, and Series B rounds.
+Lead investors: Peak XV Partners (Series B), Lightspeed India (Series A).
+
+PRODUCT: NovaMind Assist v3.2
+NovaMind Assist is an AI copilot designed for pharmaceutical sales representatives.
+It helps reps prepare for doctor visits by summarizing drug interaction data,
+generating personalized talking points, and flagging compliance risks in real time.
+
+KEY FEATURES:
+1. Drug Interaction Engine: Cross references 14,000+ drug compounds from the
+   NovaMind Pharma Graph database. Alerts reps when a doctor's known prescriptions
+   may conflict with the product being pitched. Updated weekly from FDA and EMA feeds.
+
+2. Visit Prep Mode: Generates a 2 minute briefing before each doctor meeting.
+   Includes the doctor's recent publications, prescription patterns (anonymized),
+   and suggested conversation angles based on therapeutic area.
+
+3. Compliance Shield: Monitors rep conversations in real time (with consent) and
+   flags statements that may violate FDA promotional guidelines. Accuracy: 94.2%
+   on internal benchmarks. False positive rate: 3.1%.
+
+4. Territory Analytics Dashboard: Tracks rep performance across assigned territories.
+   Metrics include call frequency, conversion rate, and share of voice vs competitors.
+
+PRICING:
+Enterprise tier: $180 per rep per month (minimum 50 seats).
+Growth tier: $120 per rep per month (minimum 200 seats, annual contract).
+Custom tier: Available for deployments over 1000 seats. Includes dedicated
+success manager and custom model fine tuning.
+
+TECHNICAL ARCHITECTURE:
+Backend: Python (FastAPI) running on AWS EKS. Primary LLM: Claude Sonnet for
+generation tasks, with a fallback to Gemini Flash for high volume, low complexity
+queries. Embedding model: Cohere embed v3 for the Drug Interaction Engine.
+Vector store: Pinecone (Serverless). Auth: Okta SSO with RBAC.
+Average API latency: 340ms (p50), 890ms (p95). Uptime SLA: 99.95%.
+
+RECENT MILESTONES:
+March 2026: Signed Cipla as flagship enterprise customer (800 reps).
+February 2026: Launched Compliance Shield v2 with real time monitoring.
+January 2026: Closed Series B at $28M led by Peak XV Partners.
+November 2025: Won Best AI Startup at TechSparks Bangalore.
+
+COMPETITIVE LANDSCAPE:
+Primary competitors: Veeva Vault (legacy, CRM focused, weak AI layer),
+Aktana (strong analytics, limited generative AI capabilities),
+Medidata AI (clinical trial focused, not sales enablement).
+NovaMind's moat: Only platform combining real time compliance monitoring
+with generative visit preparation. Patent pending on the Compliance Shield
+architecture (Indian Patent Application No. 202641023847).
+
+KNOWN LIMITATIONS:
+1. Drug Interaction Engine currently covers US and EU markets only.
+   India and APAC expansion planned for Q3 2026.
+2. Compliance Shield does not yet support languages other than English.
+   Hindi and Mandarin support in beta, expected GA by August 2026.
+3. Visit Prep Mode requires minimum 6 months of prescription data for
+   accurate doctor profiling. New territories show degraded performance
+   for the first quarter after deployment.
+
+TEAM:
+Total headcount: 87 employees.
+Engineering: 42 (including 12 ML engineers).
+Product: 8. Design: 5. Sales: 18. Customer Success: 9. Operations: 5.
+Key hires in Q1 2026: VP of Engineering (ex Flipkart), Head of Compliance
+(ex Pfizer India).`;
+
+/* ========================================
+   STATE
+   ======================================== */
+let history = [];
+let currentResult = null;
+
+/* ========================================
+   INIT
+   ======================================== */
+const knowledgeInput = document.getElementById('knowledgeInput');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const questionInput = document.getElementById('questionInput');
+const continueBtn = document.getElementById('continueBtn');
+const runBtn = document.getElementById('runBtn');
+const runAgainBtn = document.getElementById('runAgainBtn');
+
+knowledgeInput.value = SAMPLE_KNOWLEDGE;
+updateWordCount();
+
+knowledgeInput.addEventListener('input', () => {
+  updateWordCount();
+  validateSetup();
+});
+apiKeyInput.addEventListener('input', validateSetup);
+questionInput.addEventListener('input', () => {
+  runBtn.disabled = !questionInput.value.trim();
+});
+
+function updateWordCount() {
+  const words = knowledgeInput.value.trim().split(/\s+/).filter(w => w).length;
+  document.getElementById('wordCount').textContent = words + ' words';
+}
+
+function validateSetup() {
+  continueBtn.disabled = !(apiKeyInput.value.trim() && knowledgeInput.value.trim());
+}
+validateSetup();
+
+/* ========================================
+   NAVIGATION
+   ======================================== */
+function goToQuery() {
+  document.getElementById('setupSection').classList.add('hidden');
+  document.getElementById('heroSection').classList.add('hidden');
+  document.getElementById('querySection').classList.remove('hidden');
+  const words = knowledgeInput.value.trim().split(/\s+/).filter(w => w).length;
+  document.getElementById('loadedInfo').textContent = words + ' words ready for comparison';
+}
+
+function showSetup() {
+  document.getElementById('querySection').classList.add('hidden');
+  document.getElementById('resultsSection').classList.add('hidden');
+  document.getElementById('setupSection').classList.remove('hidden');
+  document.getElementById('heroSection').classList.remove('hidden');
+}
+
+function resetAll() {
+  document.getElementById('querySection').classList.add('hidden');
+  document.getElementById('resultsSection').classList.add('hidden');
+  document.getElementById('setupSection').classList.remove('hidden');
+  document.getElementById('heroSection').classList.remove('hidden');
+  questionInput.value = '';
+}
+
+/* ========================================
+   GEMINI API
+   ======================================== */
+const GEN_MODEL = 'gemini-3-flash-preview';
+const EMBED_MODEL = 'text-embedding-004';
+
+async function geminiGenerate(apiKey, prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEN_MODEL}:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || 'API error ' + res.status);
+  }
+  const data = await res.json();
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
+}
+
+async function geminiEmbed(apiKey, text) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBED_MODEL}:embedContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'models/' + EMBED_MODEL, content: { parts: [{ text }] } }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || 'Embedding error ' + res.status);
+  }
+  const data = await res.json();
+  return data?.embedding?.values || [];
+}
+
+/* ========================================
+   UTILITIES
+   ======================================== */
+function chunkText(text, size, overlap) {
+  size = size || 120;
+  overlap = overlap || 25;
+  const words = text.split(/\s+/);
+  const chunks = [];
+  for (let i = 0; i < words.length; i += size - overlap) {
+    const chunk = words.slice(i, i + size).join(' ');
+    if (chunk.trim()) chunks.push(chunk);
+  }
+  return chunks;
+}
+
+function cosineSim(a, b) {
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    magA += a[i] * a[i];
+    magB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
+function countWords(text) {
+  return text.trim().split(/\s+/).filter(w => w).length;
+}
+
+/* Simple answer quality heuristic: what % of question keywords appear in answer */
+function answerRelevance(question, answer) {
+  const stopWords = new Set(['what','is','the','a','an','and','or','of','to','in','for','how','does','do','are','was','were','been','its','their','this','that','who','which','with','from','by','on','at','can','has','have','did','will','about']);
+  const qWords = question.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+  if (qWords.length === 0) return 1;
+  const ansLower = answer.toLowerCase();
+  const found = qWords.filter(w => ansLower.includes(w)).length;
+  return Math.round((found / qWords.length) * 100);
+}
+
+/* ========================================
+   MAIN COMPARISON
+   ======================================== */
+async function runComparison() {
+  const apiKey = apiKeyInput.value.trim();
+  const knowledge = knowledgeInput.value.trim();
+  const question = questionInput.value.trim();
+  if (!apiKey || !knowledge || !question) return;
+
+  /* Show results section */
+  document.getElementById('querySection').classList.add('hidden');
+  document.getElementById('resultsSection').classList.remove('hidden');
+  document.getElementById('progressBox').classList.remove('hidden');
+  document.getElementById('resultsContent').classList.add('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+
+  const setProgress = (text, step) => {
+    document.getElementById('progressText').textContent = text;
+    document.getElementById('progressStep').textContent = step || '';
+  };
+
+  try {
+    const result = { question, timestamp: new Date().toISOString() };
+
+    /* ---- BASELINE ---- */
+    setProgress('Running baseline (no context)...', 'Testing pure model knowledge');
+    const baseStart = performance.now();
+    const baseAnswer = await geminiGenerate(apiKey, 'Answer this question:\n\nQUESTION: ' + question + '\n\nANSWER:');
+    const baseTime = Math.round(performance.now() - baseStart);
+    result.baseline = {
+      answer: baseAnswer,
+      totalMs: baseTime,
+      answerWords: countWords(baseAnswer),
+      relevance: answerRelevance(question, baseAnswer),
+    };
+
+    /* ---- RAG ---- */
+    setProgress('Chunking document...', 'Splitting into overlapping segments');
+    const chunks = chunkText(knowledge);
+    result.ragChunkCount = chunks.length;
+
+    const embedStart = performance.now();
+    const chunkEmbeddings = [];
+    for (let i = 0; i < chunks.length; i++) {
+      setProgress('Embedding chunks...', 'Chunk ' + (i + 1) + ' of ' + chunks.length);
+      const emb = await geminiEmbed(apiKey, chunks[i]);
+      chunkEmbeddings.push(emb);
+    }
+
+    setProgress('Embedding question...', 'Creating query vector');
+    const queryEmb = await geminiEmbed(apiKey, question);
+    const embedTime = Math.round(performance.now() - embedStart);
+
+    setProgress('Retrieving top chunks...', 'Semantic similarity search');
+    const retrieveStart = performance.now();
+    const scores = chunkEmbeddings.map((emb, idx) => ({
+      idx, score: cosineSim(queryEmb, emb),
+    }));
+    scores.sort((a, b) => b.score - a.score);
+    const topK = 3;
+    const topChunks = scores.slice(0, topK).map(s => chunks[s.idx]);
+    const topScores = scores.slice(0, topK).map(s => s.score);
+    const retrieveTime = Math.round(performance.now() - retrieveStart);
+
+    setProgress('Generating RAG answer...', 'Sending retrieved context to Gemini');
+    const ragGenStart = performance.now();
+    const ragContext = topChunks.join('\n\n---\n\n');
+    const ragPrompt = 'You are a helpful assistant. Answer the question based ONLY on the provided context. If the context does not contain the answer, say "I don\'t have enough information."\n\nCONTEXT:\n' + ragContext + '\n\nQUESTION: ' + question + '\n\nANSWER:';
+    const ragAnswer = await geminiGenerate(apiKey, ragPrompt);
+    const ragGenTime = Math.round(performance.now() - ragGenStart);
+
+    result.rag = {
+      answer: ragAnswer,
+      totalMs: embedTime + retrieveTime + ragGenTime,
+      embedMs: embedTime,
+      retrieveMs: retrieveTime,
+      generateMs: ragGenTime,
+      chunksRetrieved: topK,
+      contextTokens: countWords(ragContext),
+      topScores: topScores.map(s => s.toFixed(4)),
+      answerWords: countWords(ragAnswer),
+      relevance: answerRelevance(question, ragAnswer),
+    };
+
+    /* ---- CAG ---- */
+    setProgress('Running CAG (full document in context)...', 'Sending entire knowledge base to Gemini');
+    const cagStart = performance.now();
+    const cagPrompt = 'You are a helpful assistant. Answer the question based ONLY on the provided document. If the document does not contain the answer, say "I don\'t have enough information."\n\nFULL DOCUMENT:\n' + knowledge + '\n\nQUESTION: ' + question + '\n\nANSWER:';
+    const cagAnswer = await geminiGenerate(apiKey, cagPrompt);
+    const cagTime = Math.round(performance.now() - cagStart);
+
+    result.cag = {
+      answer: cagAnswer,
+      totalMs: cagTime,
+      contextTokens: countWords(knowledge),
+      answerWords: countWords(cagAnswer),
+      relevance: answerRelevance(question, cagAnswer),
+    };
+
+    /* Store */
+    currentResult = result;
+    history.push(result);
+
+    /* Render */
+    renderResults(result);
+
+  } catch (err) {
+    document.getElementById('progressBox').classList.add('hidden');
+    document.getElementById('errorBox').classList.remove('hidden');
+    document.getElementById('errorText').textContent = err.message || 'Something went wrong. Check your API key.';
+    document.getElementById('resultsContent').classList.remove('hidden');
+  }
+}
+
+function runAnother() {
+  const nextQ = document.getElementById('nextQuestionInput').value.trim();
+  if (!nextQ) return;
+  questionInput.value = nextQ;
+  document.getElementById('nextQuestionInput').value = '';
+  runComparison();
+}
+
+/* ========================================
+   RENDER RESULTS
+   ======================================== */
+function renderResults(r) {
+  document.getElementById('progressBox').classList.add('hidden');
+  document.getElementById('resultsContent').classList.remove('hidden');
+  document.getElementById('questionDisplay').textContent = r.question;
+  document.getElementById('historyCount').textContent = history.length;
+
+  /* Auto enable run again */
+  const nextInput = document.getElementById('nextQuestionInput');
+  nextInput.addEventListener('input', () => {
+    runAgainBtn.disabled = !nextInput.value.trim();
+  });
+  runAgainBtn.disabled = true;
+
+  switchTab('overview');
+  renderOverview(r);
+  renderAnswers(r);
+  renderMetrics(r);
+  renderHistory();
+}
+
+function renderOverview(r) {
+  /* Latency cards */
+  const cards = [
+    { label: 'Baseline', time: r.baseline.totalMs, color: 'red' },
+    { label: 'RAG', time: r.rag.totalMs, color: 'accent' },
+    { label: 'CAG', time: r.cag.totalMs, color: 'blue' },
+  ];
+  document.getElementById('latencyCards').innerHTML = cards.map(c => `
+    <div class="metricCard" style="background:var(--${c.color}Dim)">
+      <div class="metricLabel" style="color:var(--${c.color})">${c.label}</div>
+      <div class="metricValue" style="color:var(--${c.color})">${c.time}<span class="metricUnit">ms</span></div>
+    </div>
+  `).join('');
+
+  /* RAG breakdown */
+  document.getElementById('ragBreakdown').innerHTML = `
+    <span>Embedding: ${r.rag.embedMs}ms</span>
+    <span>Retrieval: ${r.rag.retrieveMs}ms</span>
+    <span>Generation: ${r.rag.generateMs}ms</span>
+    <span>Chunks: ${r.rag.chunksRetrieved}/${r.ragChunkCount}</span>
+    <span>Top scores: ${r.rag.topScores.join(', ')}</span>
+  `;
+
+  /* Quick answer preview */
+  document.getElementById('overviewAnswers').innerHTML = `
+    <div class="answerCard" style="border-color:var(--redBorder)">
+      <div class="answerHeader">
+        <span class="answerTitle" style="color:var(--red)">Baseline</span>
+        <span class="answerTag" style="background:var(--redDim);color:var(--red)">No context</span>
+      </div>
+      <p class="answerText">${escapeHtml(r.baseline.answer.slice(0, 300))}${r.baseline.answer.length > 300 ? '...' : ''}</p>
+    </div>
+    <div class="comparisonGrid">
+      <div class="answerCard" style="border-color:var(--accentBorder)">
+        <div class="answerHeader">
+          <span class="answerTitle" style="color:var(--accent)">RAG</span>
+          <span class="answerTag" style="background:var(--accentDim);color:var(--accent)">${r.rag.relevance}% relevant</span>
+        </div>
+        <p class="answerText">${escapeHtml(r.rag.answer.slice(0, 250))}${r.rag.answer.length > 250 ? '...' : ''}</p>
+      </div>
+      <div class="answerCard" style="border-color:var(--blueBorder)">
+        <div class="answerHeader">
+          <span class="answerTitle" style="color:var(--blue)">CAG</span>
+          <span class="answerTag" style="background:var(--blueDim);color:var(--blue)">${r.cag.relevance}% relevant</span>
+        </div>
+        <p class="answerText">${escapeHtml(r.cag.answer.slice(0, 250))}${r.cag.answer.length > 250 ? '...' : ''}</p>
+      </div>
+    </div>
+  `;
+}
+
+function renderAnswers(r) {
+  const items = [
+    { key: 'baseline', label: 'Baseline', color: 'red', tag: 'No context provided', sub: 'Pure model knowledge. Likely hallucinated.' },
+    { key: 'rag', label: 'RAG', color: 'accent', tag: 'Retrieval Augmented', sub: `Retrieved ${r.rag.chunksRetrieved} chunks via semantic search (${r.rag.contextTokens} context words)` },
+    { key: 'cag', label: 'CAG', color: 'blue', tag: 'Cache Augmented', sub: `Full document in context (${r.cag.contextTokens} words)` },
+  ];
+
+  document.getElementById('panelAnswers').innerHTML = items.map(item => `
+    <div class="answerCard" style="border-color:var(--${item.color}Border)">
+      <div class="answerHeader">
+        <span class="answerTitle" style="color:var(--${item.color})">${item.label}</span>
+        <span class="answerTag" style="background:var(--${item.color}Dim);color:var(--${item.color})">${item.tag}</span>
+      </div>
+      <p class="answerSubtitle">${item.sub}</p>
+      <p class="answerText">${escapeHtml(r[item.key].answer)}</p>
+      <div style="margin-top:12px;display:flex;gap:16px;font-size:12px;color:var(--textMuted)">
+        <span>Latency: <b style="color:var(--${item.color})">${r[item.key].totalMs}ms</b></span>
+        <span>Words: <b>${r[item.key].answerWords}</b></span>
+        <span>Relevance: <b>${r[item.key].relevance}%</b></span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMetrics(r) {
+  const rows = [
+    ['Total Latency', r.baseline.totalMs + 'ms', r.rag.totalMs + 'ms', r.cag.totalMs + 'ms'],
+    ['Embedding Time', 'N/A', r.rag.embedMs + 'ms', 'N/A'],
+    ['Retrieval Time', 'N/A', r.rag.retrieveMs + 'ms', 'N/A'],
+    ['Generation Time', r.baseline.totalMs + 'ms', r.rag.generateMs + 'ms', r.cag.totalMs + 'ms'],
+    ['Context Words Sent', '0', String(r.rag.contextTokens), String(r.cag.contextTokens)],
+    ['Chunks Retrieved', 'N/A', r.rag.chunksRetrieved + '/' + r.ragChunkCount, 'N/A (full doc)'],
+    ['Top Similarity Score', 'N/A', r.rag.topScores[0], 'N/A'],
+    ['Answer Word Count', String(r.baseline.answerWords), String(r.rag.answerWords), String(r.cag.answerWords)],
+    ['Keyword Relevance', r.baseline.relevance + '%', r.rag.relevance + '%', r.cag.relevance + '%'],
+    ['Vector DB Required', 'No', 'Yes', 'No'],
+    ['Embedding Model Required', 'No', 'Yes', 'No'],
+    ['Scales to 100s of Docs', 'No', 'Yes', 'No (context cap)'],
+  ];
+
+  document.getElementById('detailedTable').innerHTML = `
+    <thead><tr>
+      <th>Metric</th>
+      <th style="color:var(--red)">Baseline</th>
+      <th style="color:var(--accent)">RAG</th>
+      <th style="color:var(--blue)">CAG</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(row => `<tr><td style="font-family:var(--body);font-weight:600">${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td></tr>`).join('')}
+    </tbody>
+  `;
+}
+
+function renderHistory() {
+  if (history.length === 0) return;
+  document.getElementById('historyTable').innerHTML = `
+    <thead><tr>
+      <th>#</th>
+      <th>Question</th>
+      <th style="color:var(--red)">Base (ms)</th>
+      <th style="color:var(--accent)">RAG (ms)</th>
+      <th style="color:var(--blue)">CAG (ms)</th>
+      <th>RAG Rel%</th>
+      <th>CAG Rel%</th>
+      <th>Winner</th>
+    </tr></thead>
+    <tbody>
+      ${history.map((h, i) => {
+        const winner = h.rag.totalMs < h.cag.totalMs ? 'RAG' : 'CAG';
+        const winColor = winner === 'RAG' ? 'var(--accent)' : 'var(--blue)';
+        return `<tr>
+          <td>${i + 1}</td>
+          <td style="font-family:var(--body);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(h.question)}</td>
+          <td>${h.baseline.totalMs}</td>
+          <td>${h.rag.totalMs}</td>
+          <td>${h.cag.totalMs}</td>
+          <td>${h.rag.relevance}%</td>
+          <td>${h.cag.relevance}%</td>
+          <td style="color:${winColor};font-weight:600">${winner}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  `;
+}
+
+/* ========================================
+   TABS
+   ======================================== */
+function switchTab(name) {
+  ['overview','answers','metrics','history'].forEach(t => {
+    document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== name);
+    document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === name);
+  });
+}
+
+/* ========================================
+   EXPORT
+   ======================================== */
+function exportHistory() {
+  const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'rag_vs_cag_results.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ========================================
+   HELPERS
+   ======================================== */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
